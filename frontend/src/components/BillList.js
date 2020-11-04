@@ -1,50 +1,95 @@
-import React, { useState, useEffect } from 'react';
-import { makeStyles } from '@material-ui/core/styles';
-import Box from '@material-ui/core/Box';
-import Typography from '@material-ui/core/Typography';
+import Fuse from "fuse.js";
+import React, { useState, useEffect } from "react";
 
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableContainer from '@material-ui/core/TableContainer';
-import TableHead from '@material-ui/core/TableHead';
-import TableRow from '@material-ui/core/TableRow';
-import Paper from '@material-ui/core/Paper';
+import Box from "@material-ui/core/Box";
+import Paper from "@material-ui/core/Paper";
+import Table from "@material-ui/core/Table";
+import TableBody from "@material-ui/core/TableBody";
+import TableCell from "@material-ui/core/TableCell";
+import TableContainer from "@material-ui/core/TableContainer";
+import TableHead from "@material-ui/core/TableHead";
+import TableRow from "@material-ui/core/TableRow";
+import TextField from "@material-ui/core/TextField";
+import Typography from "@material-ui/core/Typography";
+import { makeStyles } from "@material-ui/core/styles";
 
-import BillListItem from './BillListItem';
+import BillListItem from "./BillListItem";
 
 const useStyles = makeStyles({
-  header: { color: 'white' },
-  list: { background: "transparent", },
-  table: { tableLayout: 'fixed' },
-  paper: { width: '90%' },
-  tableHeader: { fontSize: '1.1rem' },
+  header: { color: "white" },
+  filterText: { backgroundColor: "white" },
+  list: { background: "transparent" },
+  table: { tableLayout: "fixed" },
+  paper: { width: "90%" },
+  tableHeader: { fontSize: "1.1rem" },
 });
+
+function billContainsText(bill, text) {
+  const titleMatches = (bill.title || "").includes(text);
+  const descriptionMatches = (bill.description || "").includes(text);
+  return titleMatches || descriptionMatches;
+}
+
+function filterBillsByText(bills, text) {
+  return bills.filter((b) => billContainsText(b, text));
+}
 
 export default function BillList(props) {
   const c = useStyles();
-  const [bills, setBills] = useState([]);
-  const [currentFilter, setFilter] = useState('SIGNED_BY_GOV')
+
+  const [allBills, setAllBills] = useState([]);
+  const [filteredBills, setFilteredBills] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("SIGNED_BY_GOV");
+  const [textFilter, setTextFilter] = useState("");
+  const [fuse, setFuse] = useState(null);
 
   useEffect(() => {
-    if (bills.length === 0) {
-      fetch(`/api/v1/bills/2019`)
-        .then(res => res.json())
-        .then(data => {
-          setBills(data);
-        });
-    }
+    console.log(
+      "current state:",
+      filteredBills.length,
+      allBills.length,
+      textFilter
+    );
   });
 
-  // Only keep the completed bills
-  console.log(bills.length);
+  // Fetch the bills if they haven't been yet
+  if (!allBills.length) {
+    fetch(`/api/v1/bills/2019`)
+      .then((res) => res.json())
+      .then((data) => {
+        // Store the full and filtered lists of bills
+        setAllBills(data);
+        setFilteredBills(filterBillsByText(data, textFilter));
 
-  let filteredBills = bills.filter(x => x.status.statusType == currentFilter);
+        // Create the fuse object (for quick text filtering)
+        setFuse(new Fuse(data, { keys: ["title", "author.firstName"] }));
+      });
+  }
 
-  const filterByStatus = (status) => { return () => setFilter(status) };
+  // Create text filter change handler
+  const filterChanged = (event) => {
+    let newFilterValue = event.target.value;
+    //setTextFilter(newFilterValue);
+    //setFilteredBills(filterBillsByText(allBills, newFilterValue));
+    console.log("fuse is:", fuse);
+    if (fuse) {
+      setFilteredBills(fuse.search(newFilterValue).map((x) => x.item));
+    }
+  };
+
+  // Filter the bills status
+  let statusFilteredBills = filteredBills.filter(
+    (x) => x.status.statusType === statusFilter
+  );
+
+  // Create the onclick handler factory
+  const filterByStatus = (status) => {
+    return () => setStatusFilter(status);
+  };
 
   return (
-    <Box display="flex"
+    <Box
+      display="flex"
       flexDirection="column"
       flexWrap="nowrap"
       alignItems="center"
@@ -58,23 +103,74 @@ export default function BillList(props) {
         </Typography>
       </Box>
 
+      <Box padding={3} color="text.primary">
+        <TextField
+          className={c.filterText}
+          label="Filter bills by text"
+          onChange={filterChanged}
+          variant="filled"
+        />
+      </Box>
+
       <Paper className={c.paper}>
         <TableContainer>
           <Table className={c.table} aria-label="simple table">
             <TableHead>
               <TableRow>
-              <TableCell align="center" className={c.tableHeader} colSpan={2}></TableCell>
-              <TableCell align="center" className={c.tableHeader}>Introduced</TableCell>
-              <TableCell align="center" className={c.tableHeader} onClick={filterByStatus('IN_SENATE_COMM')}>In Committee</TableCell>
-              <TableCell align="center" className={c.tableHeader} onClick={filterByStatus('SENATE_FLOOR')}>On Floor Calendar</TableCell>
-              <TableCell align="center" className={c.tableHeader} onClick={filterByStatus('PASSED_SENATE')}>Passed Senate</TableCell>
-              <TableCell align="center" className={c.tableHeader} onClick={filterByStatus('PASSED_ASSEMBLY')}>Passed Assembly</TableCell>
-              <TableCell align="center" className={c.tableHeader} onClick={filterByStatus('DELIVERED_TO_GOV')}>Delivered to Governor</TableCell>
-              <TableCell align="center" className={c.tableHeader} onClick={filterByStatus('SIGNED_BY_GOV')}>Signed by Governor</TableCell>
+                <TableCell
+                  align="center"
+                  className={c.tableHeader}
+                  colSpan={2}
+                ></TableCell>
+                <TableCell align="center" className={c.tableHeader}>
+                  Introduced
+                </TableCell>
+                <TableCell
+                  align="center"
+                  className={c.tableHeader}
+                  onClick={filterByStatus("IN_SENATE_COMM")}
+                >
+                  In Committee
+                </TableCell>
+                <TableCell
+                  align="center"
+                  className={c.tableHeader}
+                  onClick={filterByStatus("SENATE_FLOOR")}
+                >
+                  On Floor Calendar
+                </TableCell>
+                <TableCell
+                  align="center"
+                  className={c.tableHeader}
+                  onClick={filterByStatus("PASSED_SENATE")}
+                >
+                  Passed Senate
+                </TableCell>
+                <TableCell
+                  align="center"
+                  className={c.tableHeader}
+                  onClick={filterByStatus("PASSED_ASSEMBLY")}
+                >
+                  Passed Assembly
+                </TableCell>
+                <TableCell
+                  align="center"
+                  className={c.tableHeader}
+                  onClick={filterByStatus("DELIVERED_TO_GOV")}
+                >
+                  Delivered to Governor
+                </TableCell>
+                <TableCell
+                  align="center"
+                  className={c.tableHeader}
+                  onClick={filterByStatus("SIGNED_BY_GOV")}
+                >
+                  Signed by Governor
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredBills.map((value, index) => {
+              {statusFilteredBills.slice(0, 100).map((value, index) => {
                 //return <BillListItem key={index} year={value.billId.session} bill={value.billId.printNo} />;
                 return <BillListItem key={index} billData={value} />;
               })}
@@ -82,7 +178,6 @@ export default function BillList(props) {
           </Table>
         </TableContainer>
       </Paper>
-
     </Box>
   );
 }
