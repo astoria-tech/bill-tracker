@@ -461,6 +461,9 @@ a:hover .callout__text {
 .callout__text::after {
   content: "<<";
 }
+
+/* }}} */
+
 /* Site header {{{ */
 .site-header {
   display: flex;
@@ -617,5 +620,5 @@ a:hover .callout__text {
 /* }}} */
 
 /*
-  vim: foldmethod=marker
-  */
+vim: foldmethod=marker
+*/
