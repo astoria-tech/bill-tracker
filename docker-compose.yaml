@@ -21,10 +21,11 @@ services:
     environment:
       DEBUG: 'app'
       OPEN_LEGISLATION_KEY: ${OPEN_LEGISLATION_KEY}
+      NODE_ENV: 'docker'
     volumes:
       - './backend/src:/srv/src'
     ports:
-      - '3001:3001'
+      - '3001:3000'
 
   redis:
     image: 'redis:6'

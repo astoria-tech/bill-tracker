@@ -15,8 +15,9 @@ export default function BillList() {
 
       const paginateBills = async() => {
         let start = 0
+        let api = 'http://localhost:3000/api/v1/bills/' // TODO: make formal production environment
         do {
-          const res = await fetch(`/api/v1/bills/2019?start=${start}`);
+          const res = await fetch(api + `2019?start=${start}`);
           const {bills, end} = await res.json();
           await setBills((prevBills) => [...prevBills].concat(bills));
           start = end

@@ -5,14 +5,23 @@ const debug = require('debug')('app');
 const express = require('express');
 const fetch = require('node-fetch');
 const redis = require('redis');
+const cors = require('cors');
 
 // Create Express server
 const host = '0.0.0.0';
-const port = 3001;
+const port = 3000;
 const app = express();
 
+// CORS is needed if developing locally
+app.use(cors({
+  origin: 'http://localhost:3001',
+  methods: 'GET',
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}));
+
 // Create redis client
-const redisClient = redis.createClient('redis://redis')
+const redisEndpoint = process.env.NODE_ENV === 'docker' ? 'redis://redis': '';
+const redisClient = redis.createClient(redisEndpoint);
 const redisGet = promisify(redisClient.get).bind(redisClient);
 const redisSetEx = promisify(redisClient.setex).bind(redisClient);
 
@@ -82,12 +91,13 @@ app.get('/api/v1/bills/:year/:printNumber', async (req, res) => {
 
 const resetCache = async() => {
   console.log('resetting cache automatically');
-  const years = [2019, 2020];
+  const years = [2019]; // Frontend currently only uses this year.
   for (let i = 0; i < years.length; i++) {
     const year = years[i];
     console.log(`fetching bills for year ${year}`);
     try {
       await requestBillsFromAPI(year); // this repopulates the cache
+      console.log('successfully reset bills for year ' + year);
     } catch (error) {
       console.error(`Error fetching bills for year ${year}`);
       console.error(error);
@@ -99,7 +109,7 @@ const resetCache = async() => {
 };
 
 // Listen
-app.listen(port, host, () => {
+app.listen(port, () => {
   console.log(`Example app listening at http://${host}:${port}`);
   resetCache();
 });
