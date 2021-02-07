@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-
+import './Search.css'
 
 const Search = (props) => {
   const [search, setSearch] = useState('');
@@ -12,7 +12,7 @@ const Search = (props) => {
 
   return (
     <div className="search-bar">
-      <form onSubmit={submit}>
+      <form className="search-form" onSubmit={submit}>
         <input
           type="text"
           placeholder="Search by bill title or descrition..."

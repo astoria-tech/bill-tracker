@@ -8,6 +8,7 @@ import './BillList.css'
 export default function BillList() {
   const [bills, setBills] = useState([]);
   const [search, setSearch] = useState('');
+  const [subject, setSubject] = useState('');
   const [currentFilter, setFilter] = useState('SIGNED_BY_GOV')
 
   useEffect(() => {
@@ -23,22 +24,45 @@ export default function BillList() {
       paginateBills()
   }, []); // Only run on initial page load
 
+  // filter by the user's input and subject, if chosen
   let filteredBills = bills.filter(x => {
     return (
       x.status.statusType === currentFilter &&
       (
         x.title.toLowerCase().includes(search.toLowerCase()) ||
         x.basePrintNo.toLowerCase().includes(search.toLowerCase()) // S11, A29A, etc.
+      ) &&
+      (
+        (x.status.committeeName && x.status.committeeName.toLowerCase().includes(subject.toLowerCase())) ||
+        x.summary.toLowerCase().includes(subject.toLowerCase())
       )
     );
   }).slice(0, 500); // The user does not need to see 23,000 bills
 
   const filterByStatus = (status) => { return () => setFilter(status) };
 
+  const handleSubjectClick = (event) => {
+    event.persist()
+    setSubject((prev) => {
+      // remove subject filter if the same button is clicked twice in a row
+      if (prev === event.target.value) return '';
+      return event.target.value;
+    })
+  }
+
   return (
     <div>
       <Header></Header>
-      <Search setSearchText={setSearch}/>
+      <div className="search">
+        <div className="subject-select-buttons">
+          <p>Filter bills by subject</p>
+          <button value="police" onClick={handleSubjectClick}>Police Reform</button>
+          <button value="labor" onClick={handleSubjectClick}>Labor Rights</button>
+          <button value="hate crime" onClick={handleSubjectClick}>Hate Crimes</button>
+          <button value="education" onClick={handleSubjectClick}>Education</button>
+        </div>
+        <Search setSearchText={setSearch}/>
+      </div>
       <section className="content">
         <div className="table-head">DESCRIPTION</div>
         <div className="table-head">OVERALL STATUS</div>
