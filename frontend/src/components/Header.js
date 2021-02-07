@@ -11,7 +11,7 @@ const Header = () => {
             <use xlinkHref={`${Icons}#icon--bill`} />
           </svg>
           <h1 className="site-header__text">
-            New York State Bill Tracker for Police Reform
+            New York State Bill Tracker
           </h1>
         </div>
       </section>
