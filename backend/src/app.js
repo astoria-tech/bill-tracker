@@ -76,7 +76,7 @@ app.get('/api/v1/bills/:year/:printNumber', async (req, res) => {
 
 const resetCache = async() => {
   console.log('resetting cache automatically');
-  const years = [2020, 2021];
+  const years = [2023];
   let nextCacheResetTime = REDIS_CACHE_TIME * 1000; // JS expects ms
   for (let i = 0; i < years.length; i++) {
     const year = years[i];
